@@ -33,17 +33,24 @@ export default class SteamGameRunner_Windows extends GameRunnerProvider {
         return new Promise(async (resolve, reject) => {
             const settings = await ManagerSettings.getSingleton(game);
             // const steamDir = await GameDirectoryResolverProvider.instance.getSteamDirectory();
-            const steamDir = await GameDirectoryResolverProvider.instance.getDirectory(game);
-            if (steamDir instanceof R2Error) {
-                return resolve(steamDir);
+            let gameDir = await GameDirectoryResolverProvider.instance.getDirectory(game);
+            if (gameDir instanceof R2Error) {
+                return resolve(gameDir);
             }
+
+            gameDir = await FsProvider.instance.realpath(gameDir);
+            const gameExecutable = (await FsProvider.instance.readdir(gameDir))
+                .find((x: string) => "Game.exe" === x);
             
 
-            LoggerProvider.instance.Log(LogSeverity.INFO, `Steam directory is: ${steamDir}`);
-            LoggerProvider.instance.Log(LogSeverity.INFO, `Running command: ${steamDir}/${game.exeName[0]}" ${args} ${settings.getContext().gameSpecific.launchParameters}`);
-
+            // LoggerProvider.instance.Log(LogSeverity.INFO, `Steam directory is: ${steamDir}`);
+            //LoggerProvider.instance.Log(LogSeverity.INFO, `Running command: ${steamDir}/${game.exeName[0]}" ${args} ${settings.getContext().gameSpecific.launchParameters}`);
+            LoggerProvider.instance.Log(LogSeverity.INFO, `Running command: ${gameDir}/${gameExecutable} ${args} ${settings.getContext().gameSpecific.launchParameters}`);
             //exec(`"${steamDir}/Steam.exe" -applaunch ${game.activePlatform.storeIdentifier} ${args} ${settings.getContext().gameSpecific.launchParameters}`, (err => {
-            exec(`"${steamDir}/${game.exeName[0]}" ${args} ${settings.getContext().gameSpecific.launchParameters}`, (err => {
+            exec(`"${gameExecutable}" ${args} ${settings.getContext().gameSpecific.launchParameters}`, {
+                cwd: gameDir,
+                windowsHide: false,
+            }, (err => {
                 if (err !== null) {
                     LoggerProvider.instance.Log(LogSeverity.ACTION_STOPPED, 'Error was thrown whilst starting modded');
                     LoggerProvider.instance.Log(LogSeverity.ERROR, err.message);
