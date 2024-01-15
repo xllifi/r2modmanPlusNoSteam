@@ -41,7 +41,7 @@ export default class SteamGameRunner_Windows extends GameRunnerProvider {
 
             gameDir = await FsProvider.instance.realpath(gameDir);
             const gameExecutable = (await FsProvider.instance.readdir(gameDir))
-                .find((x: string) => "Game.exe" === x);
+                .find((x: string) => "Lethal Company.exe" === x);
             
 
             // LoggerProvider.instance.Log(LogSeverity.INFO, `Steam directory is: ${steamDir}`);
