@@ -64,4 +64,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: electron-binary
-          path: D:\a\r2modmanPlusNoSteam\r2modmanPlusNoSteam\dist\electron
+          path: D:\a\r2modmanPlusNoSteam\r2modmanPlusNoSteam\dist\electron\Packaged
