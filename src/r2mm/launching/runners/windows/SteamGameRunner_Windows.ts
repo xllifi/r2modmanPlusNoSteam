@@ -8,6 +8,7 @@ import LoggerProvider, { LogSeverity } from '../../../../providers/ror2/logging/
 import { exec } from 'child_process';
 import GameInstructions from '../../instructions/GameInstructions';
 import GameInstructionParser from '../../instructions/GameInstructionParser';
+import FsProvider from '../../../../providers/generic/file/FsProvider';
 
 export default class SteamGameRunner_Windows extends GameRunnerProvider {
 
@@ -32,15 +33,22 @@ export default class SteamGameRunner_Windows extends GameRunnerProvider {
     async start(game: Game, args: string): Promise<void | R2Error> {
         return new Promise(async (resolve, reject) => {
             const settings = await ManagerSettings.getSingleton(game);
-            const steamDir = await GameDirectoryResolverProvider.instance.getSteamDirectory();
-            if (steamDir instanceof R2Error) {
-                return resolve(steamDir);
+            // const steamDir = await GameDirectoryResolverProvider.instance.getSteamDirectory();
+            let gameDir = await GameDirectoryResolverProvider.instance.getDirectory(game);
+            if (gameDir instanceof R2Error) {
+                return resolve(gameDir);
             }
 
-            LoggerProvider.instance.Log(LogSeverity.INFO, `Steam directory is: ${steamDir}`);
-            LoggerProvider.instance.Log(LogSeverity.INFO, `Running command: ${steamDir}.exe -applaunch ${game.activePlatform.storeIdentifier} ${args} ${settings.getContext().gameSpecific.launchParameters}`);
+            gameDir = await FsProvider.instance.realpath(gameDir);
+            const gameExecutable = (await FsProvider.instance.readdir(gameDir))
+                .find((x: string) => "Lethal Company.exe" === x);
+            
 
-            exec(`"${steamDir}/Steam.exe" -applaunch ${game.activePlatform.storeIdentifier} ${args} ${settings.getContext().gameSpecific.launchParameters}`, (err => {
+            // LoggerProvider.instance.Log(LogSeverity.INFO, `Steam directory is: ${steamDir}`);
+            //LoggerProvider.instance.Log(LogSeverity.INFO, `Running command: ${steamDir}/${game.exeName[0]}" ${args} ${settings.getContext().gameSpecific.launchParameters}`);
+            LoggerProvider.instance.Log(LogSeverity.INFO, `Running command: ${gameDir}/${gameExecutable} ${args} ${settings.getContext().gameSpecific.launchParameters}`);
+            //exec(`"${steamDir}/Steam.exe" -applaunch ${game.activePlatform.storeIdentifier} ${args} ${settings.getContext().gameSpecific.launchParameters}`, (err => {
+            exec(`"${gameDir}/${gameExecutable}" ${args} ${settings.getContext().gameSpecific.launchParameters}`, (err => {
                 if (err !== null) {
                     LoggerProvider.instance.Log(LogSeverity.ACTION_STOPPED, 'Error was thrown whilst starting modded');
                     LoggerProvider.instance.Log(LogSeverity.ERROR, err.message);
